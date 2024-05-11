@@ -7,7 +7,7 @@ import (
 )
 
 func TestParseNumber(t *testing.T) {
-	input := []tokenize.Token{tokenize.Token{Typ: "Number", Value: "12345"}}
+	input := []tokenize.Token{{Typ: "number", Value: "12345"}}
 	result, err := ParseNumber(input, 0)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -27,7 +27,7 @@ func TestParseNumber(t *testing.T) {
 }
 
 func TestParseString(t *testing.T) {
-	input := Node{"StringLiteral", "abc", []Node{}}
+	input := []tokenize.Token{{Typ: "string", Value: "abc 123"}}
 	result, err := ParseString(input, 0)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -36,7 +36,7 @@ func TestParseString(t *testing.T) {
 		NextPosition: 1,
 		Node: Node{
 			Typ:    "StringLiteral",
-			Value:  "abc",
+			Value:  "abc 123",
 			Params: []Node{},
 		},
 	}
@@ -46,16 +46,149 @@ func TestParseString(t *testing.T) {
 }
 
 func TestParseExpression(t *testing.T) {
-
-}
-
-func TestParseToken(t *testing.T) {
-	input := "12345bhjkhuil"
-	result, err := tokenizePattern("number", "[0-9]+", input, 0)
+	input := []tokenize.Token{
+		{Typ: "paren", Value: "("},
+		{Typ: "symbol", Value: "subtract"},
+		{Typ: "number", Value: "4"},
+		{Typ: "number", Value: "2"},
+		{Typ: "paren", Value: ")"},
+	}
+	result, err := ParseExpression(input, 0)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
-	expected := MToken{5, Token{"number", "12345"}}
+	expected := ParseResult{
+		NextPosition: 5,
+		Node: Node{
+			Typ:   "CallExpression",
+			Value: "subtract",
+			Params: []Node{
+				{Typ: "NumberLiteral", Value: "4", Params: []Node{}},
+				{Typ: "NumberLiteral", Value: "2", Params: []Node{}},
+			},
+		},
+	}
+	if !reflect.DeepEqual(result, expected) {
+		ppExpected := PrintParseResult(expected)
+		ppResult := PrintParseResult(result)
+		t.Errorf("Expected \n%s\n, got \n%s", ppExpected, ppResult)
+	}
+}
+
+func TestParseExpressionWithNestedExpression(t *testing.T) {
+	input := []tokenize.Token{
+		{Typ: "paren", Value: "("},
+		{Typ: "symbol", Value: "add"},
+		{Typ: "number", Value: "2"},
+		{Typ: "paren", Value: "("},
+		{Typ: "symbol", Value: "subtract"},
+		{Typ: "number", Value: "4"},
+		{Typ: "number", Value: "2"},
+		{Typ: "paren", Value: ")"},
+		{Typ: "paren", Value: ")"},
+	}
+	result, err := ParseExpression(input, 0)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	expected := ParseResult{
+		NextPosition: 9,
+		Node: Node{
+			Typ:   "CallExpression",
+			Value: "add",
+			Params: []Node{
+				{Typ: "NumberLiteral", Value: "2", Params: []Node{}},
+				{
+					Typ:   "CallExpression",
+					Value: "subtract",
+					Params: []Node{
+						{Typ: "NumberLiteral", Value: "4", Params: []Node{}},
+						{Typ: "NumberLiteral", Value: "2", Params: []Node{}},
+					},
+				},
+			},
+		},
+	}
+	if !reflect.DeepEqual(result, expected) {
+		ppExpected := PrintParseResult(expected)
+		ppResult := PrintParseResult(result)
+		t.Errorf("Expected \n%s\n, got \n%s", ppExpected, ppResult)
+	}
+
+	// Test from the center
+	result, err = ParseExpression(input, 3)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	expected = ParseResult{
+		NextPosition: 8,
+		Node: Node{
+			Typ:   "CallExpression",
+			Value: "subtract",
+			Params: []Node{
+				{Typ: "NumberLiteral", Value: "4", Params: []Node{}},
+				{Typ: "NumberLiteral", Value: "2", Params: []Node{}},
+			},
+		},
+	}
+	if !reflect.DeepEqual(result, expected) {
+		ppExpected := PrintParseResult(expected)
+		ppResult := PrintParseResult(result)
+		t.Errorf("Expected \n%s\n, got \n%s", ppExpected, ppResult)
+	}
+}
+
+func TestParseProgram(t *testing.T) {
+
+	input := []tokenize.Token{
+		{Typ: "paren", Value: "("},
+		{Typ: "symbol", Value: "print"},
+		{Typ: "string", Value: "Hello"},
+		{Typ: "number", Value: "2"},
+		{Typ: "paren", Value: ")"},
+		{Typ: "paren", Value: "("},
+		{Typ: "symbol", Value: "add"},
+		{Typ: "number", Value: "2"},
+		{Typ: "paren", Value: "("},
+		{Typ: "symbol", Value: "subtract"},
+		{Typ: "number", Value: "4"},
+		{Typ: "number", Value: "2"},
+		{Typ: "paren", Value: ")"},
+		{Typ: "paren", Value: ")"},
+	}
+	result, err := ParseProgram(input)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	expected := Node{
+		Typ:   "Program",
+		Value: "",
+		Params: []Node{
+			{
+				Typ:   "CallExpression",
+				Value: "print",
+				Params: []Node{
+					{Typ: "StringLiteral", Value: "Hello", Params: []Node{}},
+					{Typ: "NumberLiteral", Value: "2", Params: []Node{}},
+				},
+			},
+			{
+				Typ:   "CallExpression",
+				Value: "add",
+				Params: []Node{
+					{Typ: "NumberLiteral", Value: "2", Params: []Node{}},
+					{
+						Typ:   "CallExpression",
+						Value: "subtract",
+						Params: []Node{
+							{Typ: "NumberLiteral", Value: "4", Params: []Node{}},
+							{Typ: "NumberLiteral", Value: "2", Params: []Node{}},
+						},
+					},
+				},
+			},
+		},
+	}
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("Expected %+v, got %+v", expected, result)
 	}

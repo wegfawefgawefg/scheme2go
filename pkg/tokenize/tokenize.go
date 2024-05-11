@@ -5,6 +5,14 @@ import (
 	"regexp"
 )
 
+/*
+Token Types:
+	- number
+	- symbol
+	- string
+	- paren
+*/
+
 type MToken struct {
 	ConsumedChars int
 	Token         Token
@@ -94,8 +102,8 @@ func TokenizeNumber(input string, current int) (MToken, error) {
 	return TokenizePattern("number", "[0-9]", input, current)
 }
 
-func TokenizeName(input string, current int) (MToken, error) {
-	return TokenizePattern("name", "[a-z]", input, current)
+func TokenizeSymbol(input string, current int) (MToken, error) {
+	return TokenizePattern("symbol", "[a-z]", input, current)
 }
 
 func TokenizeString(input string, current int) (MToken, error) {
@@ -132,7 +140,7 @@ func Tokenize(input string) ([]Token, error) {
 		TokenizeParenOpen,
 		TokenizeParenClose,
 		TokenizeNumber,
-		TokenizeName,
+		TokenizeSymbol,
 		TokenizeString,
 	}
 

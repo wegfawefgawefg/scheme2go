@@ -65,13 +65,13 @@ func TestTokenizeNumber(t *testing.T) {
 	}
 }
 
-func TestTokenizeName(t *testing.T) {
+func TestTokenizeSymbol(t *testing.T) {
 	input := "hello world"
-	result, err := TokenizeName(input, 0)
+	result, err := TokenizeSymbol(input, 0)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
-	expected := MToken{5, Token{"name", "hello"}}
+	expected := MToken{5, Token{"symbol", "hello"}}
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("Expected %+v, got %+v", expected, result)
 	}
