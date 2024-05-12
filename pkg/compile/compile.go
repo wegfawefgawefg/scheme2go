@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"scheme2go/pkg/emit"
 	"scheme2go/pkg/parse"
-	"scheme2go/pkg/tokenize"
+	"scheme2go/pkg/tkn"
 )
 
 func Compile(input string) (string, error) {
-	tokens, err := tokenize.Tokenize(input)
+	tokens, err := tkn.Tokenize(input)
 	if err != nil {
 		return "", err
 	}

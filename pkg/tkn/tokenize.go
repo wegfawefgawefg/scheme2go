@@ -1,30 +1,36 @@
-package tokenize
+package tkn
 
 import (
 	"fmt"
 	"regexp"
 )
 
-/*
-Token Types:
-	- number
-	- symbol
-	- string
-	- paren
-*/
+type TokenType int
 
-type MToken struct {
+const (
+	TokenTypeNil TokenType = iota
+	TokenTypeNumber
+	TokenTypeSymbol
+	TokenTypeString
+	TokenTypeParen
+)
+
+func (t TokenType) String() string {
+	return [...]string{"Nil", "Number", "Symbol", "String", "Paren"}[t]
+}
+
+type TokenizeResult struct {
 	ConsumedChars int
 	Token         Token
 }
 
 type Token struct {
-	Typ   string
+	Typ   TokenType
 	Value string
 }
 
 func (t Token) IsNil() bool {
-	return t.Typ == "" && t.Value == ""
+	return t.Typ == TokenTypeNil
 }
 
 func (t Token) String() string {
@@ -32,54 +38,54 @@ func (t Token) String() string {
 	return fmt.Sprintf("type: %-10s, value: %s", t.Typ, t.Value)
 }
 
-func ItsWhitespace(input string, current int) (MToken, error) {
+func TokenizeWhitespace(input string, current int) (TokenizeResult, error) {
 	char := string(input[current])
 
 	re, err := regexp.Compile(`\s`)
 	if err != nil {
-		return MToken{0, Token{}}, fmt.Errorf("failed to compile regex pattern: %s", err)
+		return TokenizeResult{0, Token{}}, fmt.Errorf("failed to compile regex pattern: %s", err)
 	}
 
 	if re.MatchString(char) {
-		return MToken{ConsumedChars: 1}, nil
+		return TokenizeResult{ConsumedChars: 1}, nil
 	}
 
-	return MToken{ConsumedChars: 0}, nil
+	return TokenizeResult{ConsumedChars: 0}, nil
 }
 
-func TokenizeCharacter(typ string, value string, input string, current int) (MToken, error) {
+func TokenizeCharacter(typ TokenType, value string, input string, current int) (TokenizeResult, error) {
 	// check if beyond the end of the input
 	if current >= len(input) {
-		return MToken{0, Token{}}, nil
+		return TokenizeResult{0, Token{}}, nil
 	}
 
 	// check if the character matches
 	if string(input[current]) == value {
-		return MToken{1, Token{typ, value}}, nil
+		return TokenizeResult{1, Token{typ, value}}, nil
 	}
 
 	// no match
-	return MToken{0, Token{}}, nil
+	return TokenizeResult{0, Token{}}, nil
 }
 
-func TokenizeParenOpen(input string, current int) (MToken, error) {
-	return TokenizeCharacter("paren", "(", input, current)
+func TokenizeParenOpen(input string, current int) (TokenizeResult, error) {
+	return TokenizeCharacter(TokenTypeParen, "(", input, current)
 }
 
-func TokenizeParenClose(input string, current int) (MToken, error) {
-	return TokenizeCharacter("paren", ")", input, current)
+func TokenizeParenClose(input string, current int) (TokenizeResult, error) {
+	return TokenizeCharacter(TokenTypeParen, ")", input, current)
 }
 
-func TokenizePattern(typ string, pattern string, input string, current int) (MToken, error) {
+func TokenizePattern(typ TokenType, pattern string, input string, current int) (TokenizeResult, error) {
 	// Check if beyond the end of the input
 	if current >= len(input) {
-		return MToken{0, Token{}}, nil
+		return TokenizeResult{0, Token{}}, nil
 	}
 
 	// Compile the regex pattern once outside the loop
 	re, err := regexp.Compile(pattern)
 	if err != nil {
-		return MToken{0, Token{}}, fmt.Errorf("failed to compile regex pattern: %s", err)
+		return TokenizeResult{0, Token{}}, fmt.Errorf("failed to compile regex pattern: %s", err)
 	}
 
 	// Keep eating characters until we find a non-match
@@ -92,29 +98,29 @@ func TokenizePattern(typ string, pattern string, input string, current int) (MTo
 
 	// Return the token if we consumed at least one character
 	if consumedChars > 0 {
-		return MToken{consumedChars, Token{typ, value}}, nil
+		return TokenizeResult{consumedChars, Token{typ, value}}, nil
 	}
 
-	return MToken{0, Token{}}, nil
+	return TokenizeResult{0, Token{}}, nil
 }
 
-func TokenizeNumber(input string, current int) (MToken, error) {
-	return TokenizePattern("number", "[0-9]", input, current)
+func TokenizeNumber(input string, current int) (TokenizeResult, error) {
+	return TokenizePattern(TokenTypeNumber, "[0-9]", input, current)
 }
 
-func TokenizeSymbol(input string, current int) (MToken, error) {
-	return TokenizePattern("symbol", "[a-z]", input, current)
+func TokenizeSymbol(input string, current int) (TokenizeResult, error) {
+	return TokenizePattern(TokenTypeSymbol, "[a-z]", input, current)
 }
 
-func TokenizeString(input string, current int) (MToken, error) {
+func TokenizeString(input string, current int) (TokenizeResult, error) {
 	// Check if beyond the end of the input
 	if current >= len(input) {
-		return MToken{0, Token{}}, nil
+		return TokenizeResult{0, Token{}}, nil
 	}
 
 	// Fail if the first character is not a quote
 	if input[current] != '"' {
-		return MToken{0, Token{}}, nil
+		return TokenizeResult{0, Token{}}, nil
 	}
 
 	// Process characters until the closing quote or end of string
@@ -127,16 +133,16 @@ func TokenizeString(input string, current int) (MToken, error) {
 
 	// Check if the loop ended without finding a closing quote
 	if current+consumedChars >= len(input) {
-		return MToken{0, Token{}}, fmt.Errorf("unterminated string at position %d", current)
+		return TokenizeResult{0, Token{}}, fmt.Errorf("unterminated string at position %d", current)
 	}
 
 	// Include the closing quote in consumed characters
-	return MToken{consumedChars + 1, Token{"string", value}}, nil
+	return TokenizeResult{consumedChars + 1, Token{TokenTypeString, value}}, nil
 }
 
 func Tokenize(input string) ([]Token, error) {
-	tokenizers := []func(string, int) (MToken, error){
-		ItsWhitespace,
+	tokenizers := []func(string, int) (TokenizeResult, error){
+		TokenizeWhitespace,
 		TokenizeParenOpen,
 		TokenizeParenClose,
 		TokenizeNumber,

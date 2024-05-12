@@ -1,17 +1,20 @@
-package tokenize
+package tkn
 
 import (
 	"reflect"
 	"testing"
 )
 
+/*
+The token type is nil, bc its not really a token. It's just a character.
+*/
 func TestTokenizeCharacter(t *testing.T) {
 	input := "example"
-	result, err := TokenizeCharacter("char", "e", input, 0)
+	result, err := TokenizeCharacter(TokenTypeNil, "e", input, 0)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
-	expected := MToken{1, Token{"char", "e"}}
+	expected := TokenizeResult{1, Token{TokenTypeNil, "e"}}
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("Expected %+v, got %+v", expected, result)
 	}
@@ -23,7 +26,7 @@ func TestTokenizeParenOpen(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
-	expected := MToken{1, Token{"paren", "("}}
+	expected := TokenizeResult{1, Token{TokenTypeParen, "("}}
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("Expected %+v, got %+v", expected, result)
 	}
@@ -35,7 +38,7 @@ func TestTokenizeParenClose(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
-	expected := MToken{1, Token{"paren", ")"}}
+	expected := TokenizeResult{1, Token{TokenTypeParen, ")"}}
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("Expected %+v, got %+v", expected, result)
 	}
@@ -43,11 +46,11 @@ func TestTokenizeParenClose(t *testing.T) {
 
 func TestTokenizePattern(t *testing.T) {
 	input := "12345bhjkhuil"
-	result, err := TokenizePattern("number", "[0-9]+", input, 0)
+	result, err := TokenizePattern(TokenTypeNumber, "[0-9]+", input, 0)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
-	expected := MToken{5, Token{"number", "12345"}}
+	expected := TokenizeResult{5, Token{TokenTypeNumber, "12345"}}
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("Expected %+v, got %+v", expected, result)
 	}
@@ -59,7 +62,7 @@ func TestTokenizeNumber(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
-	expected := MToken{3, Token{"number", "123"}}
+	expected := TokenizeResult{3, Token{TokenTypeNumber, "123"}}
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("Expected %+v, got %+v", expected, result)
 	}
@@ -71,7 +74,7 @@ func TestTokenizeSymbol(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
-	expected := MToken{5, Token{"symbol", "hello"}}
+	expected := TokenizeResult{5, Token{TokenTypeSymbol, "hello"}}
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("Expected %+v, got %+v", expected, result)
 	}
@@ -83,7 +86,7 @@ func TestTokenizeString(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
-	expected := MToken{13, Token{"string", "hello world"}}
+	expected := TokenizeResult{13, Token{TokenTypeString, "hello world"}}
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("Expected %+v, got %+v", expected, result)
 	}
@@ -95,7 +98,7 @@ func TestTokenizeStringWithNoClosingQuote(t *testing.T) {
 	if err == nil {
 		t.Errorf("Expected error for unterminated string, but got nil")
 	}
-	expected := MToken{0, Token{}}
+	expected := TokenizeResult{0, Token{}}
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("Expected %+v for unterminated string, got %+v", expected, result)
 	}
@@ -103,11 +106,11 @@ func TestTokenizeStringWithNoClosingQuote(t *testing.T) {
 
 func TestTokenizePatternInvalidRegex(t *testing.T) {
 	input := "12345"
-	result, err := TokenizePattern("number", "[0-9", input, 0) // Invalid regex pattern
+	result, err := TokenizePattern(TokenTypeNumber, "[0-9", input, 0) // Invalid regex pattern
 	if err == nil {
 		t.Errorf("Expected error for invalid regex, but got nil")
 	}
-	expected := MToken{0, Token{}}
+	expected := TokenizeResult{0, Token{}}
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("Expected %+v for invalid regex, got %+v", expected, result)
 	}

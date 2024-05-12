@@ -20,8 +20,8 @@
 ; constraints:
 ; - no type inference
 
-(file "complex.lisp")
-(package "main")
+; (file "complex.lisp")
+(package main)
 (imports 
     "fmt" 
     "strconv" 

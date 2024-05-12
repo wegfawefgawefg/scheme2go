@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	inputPath := "./cmd/compile/code.rkt"
+	inputPath := "./cmd/compile/code2.rkt"
 	input, err := os.ReadFile(inputPath)
 	if err != nil {
 		fmt.Println("Error:", err)
@@ -30,3 +30,7 @@ func main() {
 	fmt.Println("Compiled:")
 	fmt.Println(output)
 }
+
+// func add(a int, b int) int {
+// 	return a + b
+// }
